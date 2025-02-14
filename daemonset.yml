@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: gvisor-installer
+  namespace: kube-system
+  labels:
+    app: gvisor-installer
+spec:
+  selector:
+    matchLabels:
+      name: gvisor-installer
+  template:
+    metadata:
+      labels:
+        name: gvisor-installer
+    spec:
+      hostPID: true
+      containers:
+      - name: installer
+        image: jumads/gvisor-installer:latest
+        securityContext:
+          privileged: true
+        env:
+        - name: GVISOR_VERSION
+          value: "latest"
+        - name: INSTALL_DIR
+          value: "/usr/local/bin"
+        - name: RUNTIME_CLASS
+          value: "gvisor"
+        volumeMounts:
+        - name: host-root
+          mountPath: /host
+      volumes:
+      - name: host-root
+        hostPath:
+          path: /
