@@ -2,15 +2,13 @@
 set -e
 
 # Change to host root directory since we're running in a container
-cd /host
+cd /host/tmp
 
 # Configuration Variables
 GVISOR_VERSION=${GVISOR_VERSION:-"latest"}
 ARCH=$(uname -m)
-INSTALL_DIR=${INSTALL_DIR:-"/usr/local/bin"}
+INSTALL_DIR=${INSTALL_DIR:-"/usr/bin"}
 RUNTIME_CLASS=${RUNTIME_CLASS:-"gvisor"}
-
-INSTALL_DIR="/host${INSTALL_DIR}"
 
 echo "Installing gVisor version: $GVISOR_VERSION"
 echo "Architecture: $ARCH"
@@ -40,9 +38,8 @@ rm -f *.sha512
 # Make the binaries executable
 chmod a+rx runsc containerd-shim-runsc-v1
 
-# Move the binaries to the installation directory on host
-mkdir -p ${INSTALL_DIR}
-mv runsc containerd-shim-runsc-v1 ${INSTALL_DIR}/
+# Copy the binaries to the installation directory on host
+chroot /host cp tmp/runsc tmp/containerd-shim-runsc-v1 usr/bin
 
 export PATH=${PATH}:${INSTALL_DIR}
 
@@ -50,9 +47,6 @@ export PATH=${PATH}:${INSTALL_DIR}
 chroot /host runsc --version
 
 echo "Configuring Containerd to use gVisor..."
-
-# Ensure Containerd config directory exists on host
-mkdir -p /host/etc/containerd
 
 # Update Containerd config to use gVisor
 cat <<EOF > /host/etc/containerd/config.toml

@@ -8,29 +8,42 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: gvisor-installer
+      app: gvisor-installer
   template:
     metadata:
       labels:
-        name: gvisor-installer
+        app: gvisor-installer
     spec:
       hostPID: true
-      containers:
+      tolerations:
+        - operator: Exists
+      initContainers:
       - name: installer
-        image: jumads/gvisor-installer:latest
+        image: jumads/gvisor-installer
         securityContext:
           privileged: true
+          runAsUser: 0
+          capabilities:
+            add: 
+            - "SYS_ADMIN"
+            - "SYS_CHROOT"            
         env:
         - name: GVISOR_VERSION
           value: "latest"
         - name: INSTALL_DIR
-          value: "/usr/local/bin"
+          value: "/usr/bin"
         - name: RUNTIME_CLASS
           value: "gvisor"
         volumeMounts:
         - name: host-root
           mountPath: /host
+          mountPropagation: Bidirectional
+          readOnly: false
+      containers:
+      - name: dummy
+        image: registry.k8s.io/pause:3.6
       volumes:
       - name: host-root
         hostPath:
           path: /
+          type: Directory
